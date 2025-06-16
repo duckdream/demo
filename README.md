@@ -33,7 +33,7 @@ cd /data/azerothcore
 
 2. 克隆仓库并进入目录：
 ```bash
-git clone https://github.com/duckdream/demo.git .
+git clone git@github.com:duckdream/demo.git .
 ```
 
 3. 准备客户端数据：
@@ -49,6 +49,73 @@ rm data.zip
 ```bash
 docker compose up -d
 ```
+## 系统架构
+
+```mermaid
+graph TB
+    subgraph 客户端层
+        Client[游戏客户端]
+    end
+
+    subgraph 服务层
+        Auth[认证服务器<br/>ac-authserver<br/>端口: 3724]
+        World1[世界服务器1<br/>ac-worldserver<br/>端口: 8085]
+        World2[世界服务器2<br/>ac-worldserver2<br/>端口: 8086]
+    end
+
+    subgraph 数据层
+        DB[(MySQL数据库<br/>ac-database<br/>端口: 3306)]
+        subgraph 数据库结构
+            AuthDB[认证数据库<br/>acore_auth]
+            WorldDB1[世界数据库1<br/>acore_world]
+            WorldDB2[世界数据库2<br/>acore_world2]
+            CharDB1[角色数据库1<br/>acore_characters]
+            CharDB2[角色数据库2<br/>acore_characters2]
+        end
+    end
+
+    subgraph 初始化服务
+        DBImport[数据库导入服务<br/>ac-db-import]
+        DBImport2[数据库导入服务2<br/>ac-db-import2]
+    end
+
+    Client --> Auth
+    Client --> World1
+    Client --> World2
+    
+    Auth --> DB
+    World1 --> DB
+    World2 --> DB
+    
+    DB --> AuthDB
+    DB --> WorldDB1
+    DB --> WorldDB2
+    DB --> CharDB1
+    DB --> CharDB2
+    
+    DBImport --> DB
+    DBImport2 --> DB
+
+    style Client fill:#f9f,stroke:#333,stroke-width:2px
+    style Auth fill:#bbf,stroke:#333,stroke-width:2px
+    style World1 fill:#bbf,stroke:#333,stroke-width:2px
+    style World2 fill:#bbf,stroke:#333,stroke-width:2px
+    style DB fill:#dfd,stroke:#333,stroke-width:2px
+    style DBImport fill:#fdb,stroke:#333,stroke-width:2px
+    style DBImport2 fill:#fdb,stroke:#333,stroke-width:2px
+```
+
+系统架构说明：
+1. 客户端层：游戏客户端通过认证服务器进行身份验证，然后连接到世界服务器
+2. 服务层：
+   - 认证服务器：处理玩家登录认证
+   - 世界服务器：处理游戏逻辑和玩家交互
+3. 数据层：
+   - MySQL数据库：存储所有游戏数据
+   - 数据库结构：包含认证、世界和角色数据
+4. 初始化服务：
+   - 数据库导入服务：负责初始化数据库结构和数据
+
 
 ## 服务说明
 
