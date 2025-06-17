@@ -13,10 +13,7 @@
    - [世界服务器 (ac-worldserver)](#世界服务器-ac-worldserver)
 6. [启动顺序与依赖关系](#启动顺序与依赖关系)
 7. [环境变量配置](#环境变量配置)
-8. [挂载目录说明](#挂载目录说明)
-9. [多大区部署](#多大区部署)
-10. [常用命令](#常用命令)
-11. [故障排除](#故障排除)
+8. [多大区部署](#多大区部署)
 
 ## 环境要求
 
@@ -50,15 +47,15 @@
 
 ## 快速开始
 
-1. 创建基础目录：
+1. 创建基础部署目录：
 ```bash
 mkdir -p /data/azerothcore
 cd /data/azerothcore
 ```
 
-2. 克隆仓库并进入目录：
+2. 克隆项目仓库并进入目录：
 ```bash
-git clone git@github.com:duckdream/demo.git .
+git clone -b main git@github.com:duckdream/demo.git .
 ```
 
 3. 准备客户端数据：
@@ -297,7 +294,7 @@ graph LR
 
 ### 数据库导入服务 (ac-db-import)
 
-**镜像**: registry.cn-shanghai.aliyuncs.com/demo-sh/ac-wotlk-db-import:${DOCKER_IMAGE_TAG:-master}
+**镜像**: registry.cn-shanghai.aliyuncs.com/demo-sh/ac-wotlk-db-import:master
 
 **环境变量**:
 - `AC_DATA_DIR`: 客户端数据目录 (值: "/azerothcore/env/dist/data")
@@ -315,7 +312,7 @@ graph LR
 
 ### 认证服务器 (ac-authserver)
 
-**镜像**: registry.cn-shanghai.aliyuncs.com/demo-sh/ac-wotlk-authserver:${DOCKER_IMAGE_TAG:-master}
+**镜像**: registry.cn-shanghai.aliyuncs.com/demo-sh/ac-wotlk-authserver:master
 
 **端口映射**:
 - `${DOCKER_AUTH_EXTERNAL_PORT:-3724}:3724` (默认: 3724)
@@ -340,7 +337,7 @@ graph LR
 
 ### 世界服务器 (ac-worldserver)
 
-**镜像**: registry.cn-shanghai.aliyuncs.com/demo-sh/ac-wotlk-worldserver:${DOCKER_IMAGE_TAG:-master}
+**镜像**: registry.cn-shanghai.aliyuncs.com/demo-sh/ac-wotlk-worldserver:master
 
 **端口映射**:
 - `${DOCKER_WORLD_EXTERNAL_PORT:-8085}:8085` (默认: 8085): 世界服务器端口
@@ -424,38 +421,17 @@ ac-authserver  ac-worldserver
 | DOCKER_VOL_LOGS | 日志文件目录 | ./env/dist/logs |
 | DOCKER_VOL_DATA | 客户端数据目录 | ./ac-client-data |
 
-## 挂载目录说明
-
-### 1. 配置文件目录 (${DOCKER_VOL_ETC:-./env/dist/etc})
-
-包含所有服务器配置文件：
-- `authserver.conf`: 认证服务器配置
-- `worldserver.conf`: 世界服务器配置
-- `dbimport.conf`: 数据库导入配置
-- 其他配置文件
-
-### 2. 日志文件目录 (${DOCKER_VOL_LOGS:-./env/dist/logs})
-
-包含所有服务器日志文件：
-- `auth.log`: 认证服务器日志
-- `world.log`: 世界服务器日志
-- `db-import.log`: 数据库导入日志
-- 其他日志文件
-
-### 3. 客户端数据目录 (${DOCKER_VOL_DATA:-./ac-client-data})
-
-包含游戏客户端数据文件：
-- `dbc/`: 客户端DBC文件
-- `maps/`: 地图文件
-- `vmaps/`: 可视地图文件
-- `mmaps/`: 移动地图文件
 
 ## 多大区部署
 
-要部署多个大区，需要为每个额外的大区创建以下服务：
+要部署多个大区，遵循以下事项：
 
 1. 额外的数据库导入服务 (ac-db-import2, ac-db-import3, ...)
 2. 额外的世界服务器 (ac-worldserver2, ac-worldserver3, ...)
+3. world、characters数据库名称不可重复
+4. RealmID不可重复,通过环境变量设置
+5. 新开大区默认状态flag为0,timezone为1
+6. 多个大区共享git仓库工作目录
 
 ### 配置大区列表
 
