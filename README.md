@@ -133,6 +133,7 @@ echo 'INSTALLED_VERSION=v16' > data-version
 
 **挂载目录**:
 - `${DOCKER_VOL_ETC:-./env/dist/etc}:/azerothcore/env/dist/etc`: 配置文件目录
+- `./env/dist/etc/worldserver.conf:/azerothcore/env/dist/etc`: 世界服配置文件
 - `${DOCKER_VOL_LOGS:-./env/dist/logs}:/azerothcore/env/dist/logs:delegated`: 日志文件目录
 
 **依赖条件**:
