@@ -3,28 +3,19 @@ description:
 globs: 
 alwaysApply: true
 ---
-# 配置文件指南
+# Configuration
 
-## 配置文件位置
-所有配置文件都位于 `env/dist/etc/` 目录下：
+The main configuration for the services is handled through a combination of environment files and `.conf` files.
 
-1. `authserver.conf` - 认证服务器配置
-2. `worldserver.conf` - 世界服务器配置
-3. `dbimport.conf` - 数据库导入配置
-4. `modules/` - 模块配置目录
+## Environment Configuration
 
-## 多区部署配置
-对于多区部署，需要遵循以下命名规范：
+*   `[conf/dist/env.ac](mdc:conf/dist/env.ac)`: This file defines environment variables that are used by the Docker services. It sets up things like database connection info, and directories for logs and data.
 
-1. 世界服务器配置文件：`sN_worldserver.conf`(N为区服ID)
-2. 数据库命名：`sN_数据库名`(N为区服ID)
+## Server Configuration
 
-## 环境变量
-主要环境变量配置文件：
-- `conf/dist/env.ac` - 核心环境变量
-- `conf/dist/env.docker` - Docker 相关环境变量
+The configuration files for the `authserver` and `worldserver` are located in `[env/dist/etc/](mdc:env/dist/etc)`.
 
-## 重要提示
-1. 除了 `worldserver.conf` 需要修改外，其他配置文件保持默认即可
-2. 多区部署时，每个区的配置文件中的 RealmID 必须与区服ID对应
-3. 配置文件修改后需要重启相应服务才能生效
+*   `[env/dist/etc/authserver.conf](mdc:env/dist/etc/authserver.conf)`: Configuration for the authentication server.
+*   `[env/dist/etc/worldserver.conf](mdc:env/dist/etc/worldserver.conf)`: Configuration for the world server. The `README.md` states that this file is the main one that requires modification for deployment.
+
+For multi-realm deployments, separate `worldserver.conf` files are created for each realm (e.g., `s1_worldserver.conf`, `s2_worldserver.conf`).

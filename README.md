@@ -131,7 +131,7 @@ echo 'INSTALLED_VERSION=v16' > data-version
 - `AC_TEMP_DIR`: 临时文件目录 (值: "/azerothcore/env/dist/temp")
 - `AC_LOGIN_DATABASE_INFO`: 认证数据库连接信息 (值: "ac-database;3306;root;${DOCKER_DB_ROOT_PASSWORD:-password};acore_auth")
 
-**挂载目录**:
+**挂载目录和文件**:
 - `${DOCKER_VOL_ETC:-./env/dist/etc}:/azerothcore/env/dist/etc`: 配置文件目录
 - `./env/dist/etc/worldserver.conf:/azerothcore/env/dist/etc`: 世界服配置文件
 - `${DOCKER_VOL_LOGS:-./env/dist/logs}:/azerothcore/env/dist/logs:delegated`: 日志文件目录

@@ -3,24 +3,16 @@ description:
 globs: 
 alwaysApply: true
 ---
-# 项目结构指南
+# Project Structure
 
-本项目是一个基于 Docker 的 AzerothCore 部署方案。项目的主要目录结构如下：
+This project is a Dockerized deployment of an AzerothCore World of Warcraft server.
 
-- [ac-client-data/](mdc:ac-client-data) - 存放客户端数据文件
-  - [data-version](mdc:ac-client-data/data-version) - 客户端数据版本信息
+## Key Directories
 
-- [conf/](mdc:conf) - 配置目录
-  - `dist/env.ac` - 环境配置文件
-
-- [env/](mdc:env) - 环境相关文件
-  - `dist/etc/` - 服务器配置文件
-  - `dist/logs/` - 日志文件
-  - `user/` - 用户自定义文件
-
-- [README.md](mdc:README.md) - 项目说明文档
-
-## 重要说明
-1. 所有服务配置文件都位于 `env/dist/etc/` 目录下
-2. 客户端数据必须放在 `ac-client-data/` 目录中
-3. 日志文件统一存放在 `env/dist/logs/` 目录下
+*   `ac-client-data/`: Contains client data files required by the world server.
+*   `conf/`: Holds configuration files.
+    *   `conf/dist/env.ac`: Main environment configuration file used by the services.
+*   `env/`: Contains environment-specific files, including configurations and logs.
+    *   `env/dist/etc/`: Contains the configuration files for `authserver` and `worldserver`. See [Configuration](mdc:conf/configuration.mdc) for more details.
+    - `env/dist/logs/`: Stores log files for the different services.
+*   `README.md`: The main documentation for the project, which you can read [here](mdc:README.md).

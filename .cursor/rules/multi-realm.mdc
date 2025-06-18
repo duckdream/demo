@@ -1,0 +1,31 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Multi-Realm Deployment
+
+The project supports deploying multiple game realms. Here are the guidelines for setting up a multi-realm environment, based on the `[README.md](mdc:README.md)`.
+
+## Naming Conventions
+
+-   **New Realm Name**: `Realms<RealmID>`
+-   **Service Name**: `s<RealmID>-<service>`
+-   **Database Name**: `s<RealmID>_<database>`
+-   **Config File**: `s<RealmID>_worldserver.conf`
+
+## Services
+
+-   `ac-authserver`: Shared across all realms.
+-   `ac-db-import`: One per realm, with a unique service name.
+-   `ac-worldserver`: One per realm, with a unique service name and external port.
+
+## Configuration
+
+-   **Worldserver Config**: Each realm requires its own worldserver configuration file (e.g., `s1_worldserver.conf`) located in `[env/dist/etc/](mdc:env/dist/etc)`. This file must be mounted into the corresponding `ac-worldserver` container at `/azerothcore/env/dist/etc/worldserver.conf`.
+-   **Databases**: Each realm needs its own `acore_world` and `acore_characters` databases, with names following the convention (e.g., `s1_acore_world`).
+-   **Realm List**: New realms must be added to the `acore_auth.realmlist` table in the database.
+    ```sql
+    INSERT INTO acore_auth.realmlist (id, name, address, port, flag, timezone)
+    VALUES (2, 'Realm 2', 'SERVER_IP', 8086, 0, 1);
+    ```
