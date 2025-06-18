@@ -1,4 +1,4 @@
-## AzerothCore Docker 部署指南
+## AzerothCore项目 Docker 部署指南
 
 ### 运行时
 
@@ -17,7 +17,7 @@
 │       └── env.ac      # 环境配置文件
 ├── env/
 │   └── dist/
-│       ├── etc/        # 配置文件
+│       ├── etc/        # 配置文件样例
 │       └── logs/       # 日志文件
 └── docker-compose.yml  # Docker Compose配置文件
 ```
@@ -131,9 +131,8 @@ echo 'INSTALLED_VERSION=v16' > data-version
 - `AC_TEMP_DIR`: 临时文件目录 (值: "/azerothcore/env/dist/temp")
 - `AC_LOGIN_DATABASE_INFO`: 认证数据库连接信息 (值: "ac-database;3306;root;${DOCKER_DB_ROOT_PASSWORD:-password};acore_auth")
 
-**挂载目录和文件**:
+**挂载目录**:
 - `${DOCKER_VOL_ETC:-./env/dist/etc}:/azerothcore/env/dist/etc`: 配置文件目录
-- `./env/dist/etc/worldserver.conf:/azerothcore/env/dist/etc`: 世界服配置文件
 - `${DOCKER_VOL_LOGS:-./env/dist/logs}:/azerothcore/env/dist/logs:delegated`: 日志文件目录
 
 **依赖条件**:
@@ -162,8 +161,9 @@ echo 'INSTALLED_VERSION=v16' > data-version
 - `AC_WORLD_DATABASE_INFO`: 世界数据库连接信息 (值: "ac-database;3306;root;${DOCKER_DB_ROOT_PASSWORD:-password};acore_world")
 - `AC_CHARACTER_DATABASE_INFO`: 角色数据库连接信息 (值: "ac-database;3306;root;${DOCKER_DB_ROOT_PASSWORD:-password};acore_characters")
 
-**挂载目录**:
+**挂载目录和文件**:
 - `${DOCKER_VOL_ETC:-./env/dist/etc}:/azerothcore/env/dist/etc`: 配置文件目录
+- `./env/dist/etc/worldserver.conf:/azerothcore/env/dist/etc`: 世界服配置文件
 - `${DOCKER_VOL_LOGS:-./env/dist/logs}:/azerothcore/env/dist/logs:delegated`: 日志文件目录
 - `${DOCKER_VOL_DATA:-./ac-client-data}:/azerothcore/env/dist/data/:ro`: 客户端数据目录 (只读)
 

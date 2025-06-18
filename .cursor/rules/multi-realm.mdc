@@ -3,29 +3,30 @@ description:
 globs: 
 alwaysApply: true
 ---
-# Multi-Realm Deployment
+# 多区部署指南
 
-The project supports deploying multiple game realms. Here are the guidelines for setting up a multi-realm environment, based on the `[README.md](mdc:README.md)`.
+根据 [README.md](mdc:README.md)，项目支持多区（multi-realm）部署。以下是关键的配置和命名规范。
 
-## Naming Conventions
+### 核心原则
 
--   **New Realm Name**: `Realms<RealmID>`
--   **Service Name**: `s<RealmID>-<service>`
--   **Database Name**: `s<RealmID>_<database>`
--   **Config File**: `s<RealmID>_worldserver.conf`
+- **共享服务**: `ac-authserver` 服务是所有区共用的。
+- **独立服务**: 每个区都需要一个独立的 `ac-db-import` 和 `ac-worldserver` 服务实例。
+- **独立数据**: 每个区的 `acore_world` 和 `acore_characters` 数据库是独立的。
 
-## Services
+### 命名规范
 
--   `ac-authserver`: Shared across all realms.
--   `ac-db-import`: One per realm, with a unique service name.
--   `ac-worldserver`: One per realm, with a unique service name and external port.
+- **服务名**: `s<大区ID>-<服务类型>` (例如, `s1-worldserver`)
+- **数据库名**: `s<大区ID>_<数据库名>` (例如, `s1_acore_world`)
+- **配置文件**: `s<大区ID>_worldserver.conf` (例如, `s1_worldserver.conf`)
 
-## Configuration
+### 配置步骤
 
--   **Worldserver Config**: Each realm requires its own worldserver configuration file (e.g., `s1_worldserver.conf`) located in `[env/dist/etc/](mdc:env/dist/etc)`. This file must be mounted into the corresponding `ac-worldserver` container at `/azerothcore/env/dist/etc/worldserver.conf`.
--   **Databases**: Each realm needs its own `acore_world` and `acore_characters` databases, with names following the convention (e.g., `s1_acore_world`).
--   **Realm List**: New realms must be added to the `acore_auth.realmlist` table in the database.
-    ```sql
-    INSERT INTO acore_auth.realmlist (id, name, address, port, flag, timezone)
-    VALUES (2, 'Realm 2', 'SERVER_IP', 8086, 0, 1);
-    ```
+1.  为每个新区创建独立的 `worldserver.conf` 配置文件，并修改其中的 `RealmID`。
+2.  在 `docker-compose.yml` (假设存在) 中为每个新区定义新的 `worldserver` 和 `db-import` 服务。
+3.  确保为新区的服务分配不同的外部端口。
+4.  在 `acore_auth.realmlist` 表中为每个新区添加入口，指向正确的IP和端口。
+
+```sql
+INSERT INTO acore_auth.realmlist (id, name, address, port, flag, timezone) 
+VALUES (2, \'大区2\', \'服务器IP\', 8086, 0, 1);
+```

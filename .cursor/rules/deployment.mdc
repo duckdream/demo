@@ -3,24 +3,42 @@ description:
 globs: 
 alwaysApply: true
 ---
-# Deployment
+# 部署与操作指南
 
-This project is deployed using Docker and Docker Compose. The services are defined in a `docker-compose.yml` file (as described in the `[README.md](mdc:README.md)`).
+本指南基于 [README.md](mdc:README.md) 提供的信息。
 
-## Services
+### 部署步骤
 
-There are four main services:
+1.  **克隆仓库**
+    > **‼️ 重要注意事项 ‼️**
+    > 必须使用 SSH 协议访问仓库: `git clone -b main git@github.com:duckdream/demo.git /data/azerothcore`
 
-1.  **`ac-database`**: The MySQL database server.
-2.  **`ac-db-import`**: A one-time service that initializes the database. It depends on `ac-database`.
-3.  **`ac-authserver`**: The authentication server. It depends on `ac-database` being healthy and `ac-db-import` completing successfully.
-4.  **`ac-worldserver`**: The world server. It also depends on `ac-database` and `ac-db-import`.
+2.  **准备客户端数据**
+    > **‼️ 重要注意事项 ‼️**
+    > 如果 `data-version` 文件已存在，则无需重新下载数据。
 
-## Startup Order
+3.  **启动服务**: 使用 `docker-compose up -d` (假设有 `docker-compose.yml`) 来启动所有服务。
 
-The services are started in a specific order to ensure dependencies are met:
-1.  `ac-database` starts first.
-2.  `ac-db-import` runs after the database is healthy.
-3.  `ac-authserver` and `ac-worldserver` start after the database is ready and the import is complete.
+### 服务启动顺序
 
-For detailed information about the services, ports, and volumes, please refer to the `[README.md](mdc:README.md)`.
+服务之间有严格的依赖关系：
+
+1.  `ac-database` 首先启动。
+2.  `ac-db-import` 在 `ac-database` 健康后启动，完成数据导入后退出。
+3.  `ac-authserver` 和 `ac-worldserver` 在 `ac-db-import` 成功完成后启动。
+
+### 重点服务配置
+
+- **ac-worldserver**
+    > **‼️ 重要注意事项 ‼️**
+    > 必须保持终端和标准输入打开 (`tty: true`, `stdin_open: true`)，否则服务会启动异常。
+
+### 常用操作
+
+- **创建游戏账号**:
+  ```bash
+  docker attach ac-worldserver
+  account create <用户名> <密码>
+  account set gmlevel <用户名> 3 -1
+  ```
+- **退出容器控制台**: 按 `Ctrl+P` 然后 `Ctrl+Q`。
