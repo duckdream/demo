@@ -17,7 +17,7 @@
 │       └── env.ac      # 环境配置文件
 ├── env/
 │   └── dist/
-│       ├── etc/        # 配置文件样例
+│       ├── etc/        # 配置文件模版
 │       └── logs/       # 日志文件
 └── docker-compose.yml  # Docker Compose配置文件
 ```
@@ -163,7 +163,7 @@ echo 'INSTALLED_VERSION=v16' > data-version
 
 **挂载目录和文件**:
 - `${DOCKER_VOL_ETC:-./env/dist/etc}:/azerothcore/env/dist/etc`: 配置文件目录
-- `./env/dist/etc/worldserver.conf:/azerothcore/env/dist/etc`: 世界服配置文件
+- `!!!./env/dist/etc/worldserver.conf:/azerothcore/env/dist/etc!!!`: 世界服配置文件
 - `${DOCKER_VOL_LOGS:-./env/dist/logs}:/azerothcore/env/dist/logs:delegated`: 日志文件目录
 - `${DOCKER_VOL_DATA:-./ac-client-data}:/azerothcore/env/dist/data/:ro`: 客户端数据目录 (只读)
 
@@ -188,14 +188,14 @@ echo 'INSTALLED_VERSION=v16' > data-version
 - **ac-worldserver**: 每区各1个，名称不可重复，内部端口不变，外部端口不可重复
 
 **配置**:
-- **配置文件**: `/data/azerothcore/env/dist/etc/worldserver.conf`，每区个1个，名称不可重复，配置文件中的RealmID值与各区ID对应，挂载到容器内`/azerothcore/env/dist/etc/worldserver.conf`
+- **配置文件**: 使用模版文件!!!`/data/azerothcore/env/dist/etc/worldserver.conf`，每区个1个，名称不可重复，配置文件中的RealmID值与各区ID对应，挂载到容器内`/azerothcore/env/dist/etc/worldserver.conf`!!!
 - **数据库**: acore_world和acore_characters，每区各1个，名称不可重复
-- **大区列表**: 新区状态flag设置为0，timezone设置为1
+- **更新大区列表**: 新区状态flag设置为0，timezone设置为1
 ```sql
 INSERT INTO acore_auth.realmlist (id, name, address, port, flag, timezone) 
-VALUES (1, '大区1', '服务器IP', 8085, 0, 1);
+VALUES (大区ID, 'Realms大区ID', '服务器IP', 8085, 0, 1);
 INSERT INTO acore_auth.realmlist (id, name, address, port, flag, timezone) 
-VALUES (2, '大区2', '服务器IP', 8086, 0, 1);
+VALUES (大区ID, 'Realms大区ID', '服务器IP', 8086, 0, 1);
 ```
 **目录结构**:
 多区可共用项目仓库：`git clone -b main git@github.com:duckdream/demo.git /data/azerothcore`

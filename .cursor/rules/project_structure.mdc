@@ -1,0 +1,20 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+- # 项目结构
+
+本项目是围绕 Docker 的 AzerothCore 部署。详细的目录结构和说明如下，参考了 [README.md](mdc:README.md) 中的信息：
+
+- `ac-client-data/`: 存放从外部下载和解压的客户端数据文件。
+- `conf/`: 存放应用的基础配置文件。
+    - `dist/`:
+        - `[conf/dist/env.ac](mdc:conf/dist/env.ac)`: AzerothCore 的核心环境配置文件。
+        - `[conf/dist/env.docker](mdc:conf/dist/env.docker)`: 用于配置 Docker Compose 的变量。
+- `env/`: 存放环境相关的数据和配置。
+    - `dist/`:
+        - `etc/`: 存放各个服务的详细配置文件，如 `authserver.conf` 和 `worldserver.conf`。**`worldserver.conf` 是唯一需要根据部署进行修改的配置文件。**
+        - `logs/`: 存放所有 Docker 服务的日志文件。
+- `README.md`: [项目的主说明文件](mdc:README.md)，包含了部署、配置和操作的详细指南。
+- `docker-compose.yml`: (此文件当前不在项目中，但 `README.md` 提到它是部署的核心文件) 定义了所有服务、网络和卷。
