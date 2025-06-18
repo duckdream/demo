@@ -1,0 +1,52 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# 服务部署指南
+
+## 核心服务
+项目包含以下核心服务:
+
+1. **ac-database** (MySQL 8.4)
+   - 默认端口:3306
+   - 主要功能:存储所有游戏数据
+   - 重启策略:unless-stopped
+
+2. **ac-db-import**
+   - 一次性服务
+   - 功能:初始化数据库结构和数据
+   - 依赖:ac-database 服务健康检查通过
+
+3. **ac-authserver**
+   - 默认端口:3724
+   - 功能:处理账号验证和大区列表
+   - 依赖:ac-database 健康 + ac-db-import 完成
+   - 重启策略:unless-stopped
+
+4. **ac-worldserver**
+   - 默认端口:8085 (游戏), 7878 (SOAP)
+   - 功能:处理游戏世界逻辑
+   - 依赖:ac-database 健康 + ac-db-import 完成
+   - 重启策略:unless-stopped
+   - 注意:必须启用 tty 和 stdin_open
+
+## 多区部署规则
+1. 命名规范:
+   - 区服名:`Realms大区ID`
+   - 服务名:`s大区ID-服务`
+   - 数据库:`s大区ID_数据库`
+
+2. 服务部署:
+   - ac-authserver:多区共用一个
+   - ac-db-import:每区单独部署
+   - ac-worldserver:每区单独部署
+
+3. 端口分配:
+   - 内部端口保持不变
+   - 外部端口不可重复
+
+## 重要提示
+1. 服务启动顺序:ac-database → ac-db-import → (ac-authserver + ac-worldserver)
+2. 所有服务的日志都存放在 `env/dist/logs/` 目录
+3. 客户端数据必须挂载到 worldserver 的 `/azerothcore/env/dist/data/` 目录

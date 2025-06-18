@@ -1,0 +1,30 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# 配置文件指南
+
+## 配置文件位置
+所有配置文件都位于 `env/dist/etc/` 目录下：
+
+1. `authserver.conf` - 认证服务器配置
+2. `worldserver.conf` - 世界服务器配置
+3. `dbimport.conf` - 数据库导入配置
+4. `modules/` - 模块配置目录
+
+## 多区部署配置
+对于多区部署，需要遵循以下命名规范：
+
+1. 世界服务器配置文件：`sN_worldserver.conf`(N为区服ID)
+2. 数据库命名：`sN_数据库名`(N为区服ID)
+
+## 环境变量
+主要环境变量配置文件：
+- `conf/dist/env.ac` - 核心环境变量
+- `conf/dist/env.docker` - Docker 相关环境变量
+
+## 重要提示
+1. 除了 `worldserver.conf` 需要修改外，其他配置文件保持默认即可
+2. 多区部署时，每个区的配置文件中的 RealmID 必须与区服ID对应
+3. 配置文件修改后需要重启相应服务才能生效

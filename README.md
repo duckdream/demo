@@ -23,17 +23,20 @@
 ```
 
 1. 克隆项目仓库并进入目录：
+**`!!!!使用SSH协议访问仓库!!!!`**
 ```bash
 git clone -b main git@github.com:duckdream/demo.git /data/azerothcore
 ```
 
 2. 准备客户端数据：
+**`!!!!若data-version存在则不必下载!!!!`**
 ```bash
 # 下载客户端数据文件
 cd /data/azerothcore
 wget http://10.10.0.109/downloads/data.zip
 unzip -o -q data.zip -d ac-client-data
 rm data.zip
+echo 'INSTALLED_VERSION=v16' > data-version
 ```
 
 ### 服务
@@ -72,7 +75,7 @@ rm data.zip
    - 两者可以并行启动，没有相互依赖
 
 ### 配置
-项目仓库中除了`worldserver.conf`需要修改以外，其余所有配置文件保持默认无需修改。
+项目仓库中除了`worldserver.conf`需要修改以外，**`!!!!其余所有配置文件保持默认无需修改!!!!`**。
 
 #### 数据库服务 (ac-database)
 
