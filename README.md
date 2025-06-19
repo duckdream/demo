@@ -173,10 +173,11 @@ echo 'INSTALLED_VERSION=v16' > data-version
 
 **重启策略**: unless-stopped (除非手动停止，否则总是重启)
 
-### 多区部署
+### 新增大区步骤
 1个区 = 公共服务ac-authserver + 1个ac-db-import + 1个ac-worldserver
 
 **命名规范**：
+- **大区ID**: 整数
 - **新区名**: "Realms大区ID"
 - **服务名**: "s大区ID-服务"
 - **数据库**: "s大区ID_数据库"
@@ -198,7 +199,7 @@ INSERT INTO acore_auth.realmlist (id, name, address, port, flag, timezone)
 VALUES (大区ID, 'Realms大区ID', '服务器IP', 8086, 0, 1);
 ```
 **目录结构**:
-多区可共用项目仓库：`git clone -b main git@github.com:duckdream/demo.git /data/azerothcore`
+!!!!多区共用项目仓库!!!!：`git clone -b main git@github.com:duckdream/demo.git /data/azerothcore`
 ```
 /data/azerothcore
 ├── README.md
