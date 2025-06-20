@@ -1,0 +1,29 @@
+---
+# ansible/roles/post-deploy/tasks/main.yml
+
+- name: POST-DEPLOY | Wait for database port to become available
+  ansible.builtin.wait_for:
+    host: "{{ ansible_host }}"
+    port: "{{ db_external_port }}"
+    delay: 10
+    timeout: 120
+  delegate_to: localhost
+  become: false
+
+- name: POST-DEPLOY | Register each realm in the database
+  community.mysql.mysql_query:
+    login_host: "{{ ansible_host }}"
+    login_port: "{{ db_external_port }}"
+    login_user: "root"
+    login_password: "{{ db_root_password }}"
+    login_db: "acore_auth"
+    query: >-
+      INSERT INTO realmlist (id, name, address, port, flag, timezone)
+      VALUES ({{ item.id }}, '{{ item.name }}', '{{ item.address }}', {{ item.world_port }}, 0, 1)
+      ON DUPLICATE KEY UPDATE
+      name=VALUES(name), address=VALUES(address), port=VALUES(port), flag=VALUES(flag), timezone=VALUES(timezone);
+  loop: "{{ realms }}"
+  loop_control:
+    label: "{{ item.name }}"
+  delegate_to: localhost
+  become: false 

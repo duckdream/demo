@@ -1,0 +1,57 @@
+---
+# ansible/roles/setup/tasks/main.yml
+
+- name: "SETUP | Ensure project root directory {{ project_root }} exists"
+  ansible.builtin.file:
+    path: "{{ project_root }}"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0755'
+
+- name: "SETUP | Clone project repository from {{ project_repo }}"
+  ansible.builtin.git:
+    repo: "{{ project_repo }}"
+    dest: "{{ project_root }}"
+    version: "{{ project_branch }}"
+    accept_hostkey: yes
+  
+- name: "SETUP | Check if client data version file exists"
+  ansible.builtin.stat:
+    path: "{{ project_root }}/data-version"
+  register: data_version_file
+
+- name: "SETUP | Prepare client data if not already present"
+  when: not data_version_file.stat.exists
+  block:
+    - name: "Download client data from {{ client_data_url }}"
+      ansible.builtin.get_url:
+        url: "{{ client_data_url }}"
+        dest: "{{ project_root }}/data.zip"
+        mode: '0644'
+
+    - name: "Create client data directory"
+      ansible.builtin.file:
+        path: "{{ project_root }}/ac-client-data"
+        state: directory
+        mode: '0755'
+
+    - name: "Unarchive client data"
+      ansible.builtin.unarchive:
+        src: "{{ project_root }}/data.zip"
+        dest: "{{ project_root }}/ac-client-data"
+        remote_src: yes
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        extra_opts: [-o, -q]
+
+    - name: "Remove temporary data zip file"
+      ansible.builtin.file:
+        path: "{{ project_root }}/data.zip"
+        state: absent
+
+    - name: "Write data version file to ensure idempotency"
+      ansible.builtin.copy:
+        content: "{{ client_data_version_string }}\n"
+        dest: "{{ project_root }}/data-version"
+        mode: '0644' 

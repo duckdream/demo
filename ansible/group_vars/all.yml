@@ -1,0 +1,41 @@
+# ansible/group_vars/all.yml
+
+# --- General Settings ---
+project_root: "/data/azerothcore"
+project_repo: "git@github.com:duckdream/demo.git"
+project_branch: "main"
+
+# --- Database Settings ---
+db_root_password: "a_very_secret_password"
+db_external_port: 3306
+
+# --- Auth Server Settings ---
+auth_external_port: 3724
+
+# --- Realms Definition ---
+# 通过修改此列表来增删大区
+realms:
+  - id: 1
+    name: "Ares"
+    address: "10.10.0.146" # 需替换为您的服务器IP
+    world_port: 8085
+    soap_port: 7878
+  - id: 2
+    name: "Zeus"
+    address: "10.10.0.146" # 需替换为您的服务器IP
+    world_port: 8086
+    soap_port: 7879
+  - id: 3
+    name: "Hera"
+    address: "10.10.0.146" # 需替换为您的服务器IP
+    world_port: 8087
+    soap_port: 7880
+  - id: 4
+    name: "Artemis"
+    address: "10.10.0.146" # 需替换为您的服务器IP
+    world_port: 8088
+    soap_port: 7881
+
+# --- Client Data Source ---
+client_data_url: "http://10.10.0.109/downloads/data.zip"
+client_data_version_string: "INSTALLED_VERSION=v16" 

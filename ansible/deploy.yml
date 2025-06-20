@@ -1,0 +1,11 @@
+---
+- name: Deploy AzerothCore Multi-Realm Environment
+  hosts: azerothcore_server
+  gather_facts: yes
+  become: yes # 大部分 docker 和文件操作需要 sudo 权限
+
+  roles:
+    - role: setup
+    - role: config
+    - role: deploy
+    - role: post-deploy 

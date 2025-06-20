@@ -1,5 +1,23 @@
 ## AzerothCore项目 Docker 部署指南
 
+### `!!!!部署第一步：获取代码!!!!`
+
+> [!IMPORTANT]
+> 本项目的所有自动化部署都基于一个完整的 Git 仓库结构。
+>
+> **禁止手动创建任何项目目录。**
+>
+> 您在目标服务器上需要执行的第一个，也是唯一一个初始化动作，就是完整克隆本仓库。
+
+克隆项目仓库并进入目录：
+**`!!!!建议使用SSH协议访问仓库!!!!`**
+```bash
+git clone -b main git@github.com:duckdream/demo.git /data/azerothcore
+cd /data/azerothcore
+```
+
+---
+
 ### 运行时
 
 - Docker Engine 20.10+
@@ -32,62 +50,23 @@
         └── logs/       # 日志文件
 ```
 
-### 准备客户端数据
-1. 克隆项目仓库并进入目录：
-**`!!!!使用SSH协议访问仓库!!!!`**
+### 准备环境与数据
+
+`!!!!重要!!!!` **请在克隆完成后的项目根目录 (`/data/azerothcore`) 下执行以下所有命令。**
+
+#### 1. 准备客户端数据
+**`!!!!若 data-version 文件已存在，则跳过此步!!!!`**
 ```bash
-git clone -b main git@github.com:duckdream/demo.git /data/azerothcore
-```
-2. 下载客户端数据文件
-**`!!!!若data-version存在则不必下载!!!!`**
-```bash
-cd /data/azerothcore
 wget http://10.10.0.109/downloads/data.zip
 unzip -o -q data.zip -d ac-client-data
 rm data.zip
 echo 'INSTALLED_VERSION=v16' > data-version
 ```
 
-### 服务
+#### 2. 配置环境变量 (`.env` 文件)
+为了方便管理所有可配置的变量（如数据库密码、端口等），`docker-compose` 会自动加载项目根目录下的 `.env` 文件。
 
-1. **数据库服务 (ac-database)**
-   - 基于MySQL 8.4
-   - 存储游戏所有数据
-
-2. **数据库导入服务 (ac-db-import)**
-   - 初始化数据库结构和数据
-   - 一次性服务，完成后自动退出
-
-3. **认证服务器 (ac-authserver)**
-   - 处理玩家账号验证
-   - 管理大区列表
-
-4. **世界服务器 (ac-worldserver)**
-   - 处理游戏世界逻辑
-   - 管理玩家角色和游戏内容
-
-### 启动顺序与依赖关系
-
-服务启动顺序由依赖关系决定，具体如下：
-
-1. **ac-database**
-   - 首先启动数据库服务
-   - 等待数据库健康检查通过
-
-2. **ac-db-import**
-   - 在数据库服务健康后启动
-   - 导入所有必要的数据库结构和数据
-   - 完成后自动退出
-
-3. **ac-authserver** 和 **ac-worldserver**
-   - 在数据库服务健康且数据库导入服务成功完成后启动
-   - 两者可以并行启动，没有相互依赖
-
-### 环境配置 (`.env` 文件)
-
-`!!!!重要!!!!` 为了方便管理所有可配置的变量（如数据库密码、端口等），强烈建议在您的项目根目录 (`/data/azerothcore/`) 下创建一个名为 `.env` 的文件。`docker-compose` 会自动加载此文件中的变量。
-
-这是一个推荐的 `.env` 文件模板，您可以直接复制使用：
+这是一个推荐的模板，您可以直接复制到项目根目录并按需修改：
 ```env
 # 数据库Root密码
 DOCKER_DB_ROOT_PASSWORD=password
@@ -107,11 +86,33 @@ DOCKER_VOL_LOGS=./env/dist/logs
 DOCKER_VOL_DATA=./ac-client-data
 ```
 
-### 配置
+### 服务部署与配置
+
+#### 启动顺序与依赖关系
+
+服务启动顺序由依赖关系决定，具体如下：
+
+1.  **ac-database**
+    -   首先独立启动。
+
+2.  **s1-db-import**
+    -   大区1的数据库导入服务，是引导所有服务的基础。
+    -   **关键职责**: 初始化共享的 `acore_auth` 库，以及大区1的 `s1_world` 和 `s1_characters` 库。
+    -   依赖于 `ac-database` 服务的健康状态。
+
+3.  **ac-authserver** 和 **s1-worldserver**
+    -   `ac-authserver` (共享认证服) 依赖于 `s1-db-import` 服务的成功完成。
+    -   `s1-worldserver` (大区1世界服) 依赖于 `s1-db-import` 服务的成功完成。
+
+4.  **其他大区的服务 (sX-db-import, sX-worldserver for X > 1)**
+    -   每个额外大区的 `sX-db-import` 服务依赖于 `ac-database` 的健康状态。
+    -   每个 `sX-worldserver` 依赖于其对应的 `sX-db-import` 服务成功完成。
+
+#### 核心配置文件
 
 `etc/` 目录 (`/data/azerothcore/env/dist/etc`) 存放着所有服务的核心配置文件。部署的基本原则是：**`!!!!除了`worldserver.conf`需要为每个大区定制修改外，其余所有配置文件均保持默认，无需任何改动!!!!`**
 
--   **`worldserver.conf`**: 世界服务器的配置文件。在多大区部署中，您需要为每个大区创建一个该文件的副本（例如 `s1_worldserver.conf`, `s2_worldserver.conf`），并修改其中的 `RealmID` 和数据库信息。详细步骤请参见“新增大区流程”。
+-   **`sX_worldserver.conf`**: 每个大区专属的世界服务器配置文件。在多大区部署中，您需要为每个大区创建一个该文件的副本（例如 `s1_worldserver.conf`, `s2_worldserver.conf`），并修改其中的 `RealmID` 和数据库信息。
 
 -   **`authserver.conf`**: 认证服务器的配置文件。此文件已包含合理的默认值，且所有大区共享同一个认证服务，因此**禁止修改**此文件。
 
@@ -119,7 +120,9 @@ DOCKER_VOL_DATA=./ac-client-data
 
 -   **`*.dist` 文件**: 这些是分发的示例配置文件，作为原始参考，不直接参与服务运行。
 
-#### 数据库服务 (ac-database)
+#### 服务详解
+
+##### 数据库服务 (ac-database)
 
 **镜像**: mysql:8.4
 
@@ -140,7 +143,7 @@ DOCKER_VOL_DATA=./ac-client-data
 
 **重启策略**: unless-stopped (除非手动停止，否则总是重启)
 
-#### 数据库导入服务 (ac-db-import)
+##### 数据库导入服务 (sX-db-import)
 
 **镜像**: registry.cn-shanghai.aliyuncs.com/demo-sh/ac-wotlk-db-import:master
 
@@ -148,8 +151,8 @@ DOCKER_VOL_DATA=./ac-client-data
 - `AC_DATA_DIR`: 客户端数据目录 (值: "/azerothcore/env/dist/data")
 - `AC_LOGS_DIR`: 日志目录 (值: "/azerothcore/env/dist/logs")
 - `AC_LOGIN_DATABASE_INFO`: 认证数据库连接信息 (值: "ac-database;3306;root;${DOCKER_DB_ROOT_PASSWORD:-password};acore_auth")
-- `AC_WORLD_DATABASE_INFO`: 世界数据库连接信息 (值: "ac-database;3306;root;${DOCKER_DB_ROOT_PASSWORD:-password};acore_world")
-- `AC_CHARACTER_DATABASE_INFO`: 角色数据库连接信息 (值: "ac-database;3306;root;${DOCKER_DB_ROOT_PASSWORD:-password};acore_characters")
+- `AC_WORLD_DATABASE_INFO`: **每个大区专属**的世界数据库连接信息 (例如: "ac-database;3306;root;${DOCKER_DB_ROOT_PASSWORD:-password};s1_world")
+- `AC_CHARACTER_DATABASE_INFO`: **每个大区专属**的角色数据库连接信息 (例如: "ac-database;3306;root;${DOCKER_DB_ROOT_PASSWORD:-password};s1_characters")
 
 **挂载目录**:
 - `${DOCKER_VOL_ETC:-./env/dist/etc}:/azerothcore/env/dist/etc`: 配置文件目录
@@ -158,7 +161,7 @@ DOCKER_VOL_DATA=./ac-client-data
 **依赖条件**:
 - 依赖于 ac-database 服务的健康状态 (condition: service_healthy)
 
-### 认证服务器 (ac-authserver)
+##### 认证服务器 (ac-authserver)
 
 **镜像**: registry.cn-shanghai.aliyuncs.com/demo-sh/ac-wotlk-authserver:master
 
@@ -179,19 +182,20 @@ DOCKER_VOL_DATA=./ac-client-data
 
 **依赖条件**:
 - 依赖于 ac-database 服务的健康状态 (condition: service_healthy)
-- 依赖于 ac-db-import 服务的成功完成 (condition: service_completed_successfully)
+- 依赖于 **s1-db-import** 服务的成功完成 (condition: service_completed_successfully)
 
 **重启策略**: unless-stopped (除非手动停止，否则总是重启)
 
-### 世界服务器 (ac-worldserver)
+##### 世界服务器 (sX-worldserver)
 
 **镜像**: registry.cn-shanghai.aliyuncs.com/demo-sh/ac-wotlk-worldserver:master
 
 **终端和标准输入**: 需要打开(tty和stdin_open设置为true)，**!!!!否则会启动异常!!!!**
 
 **端口映射**:
-- `${DOCKER_WORLD_EXTERNAL_PORT:-8085}:8085` (默认: 8085): 世界服务器端口
-- `${DOCKER_SOAP_EXTERNAL_PORT:-7878}:7878` (默认: 7878): SOAP接口端口
+- `!!!!必须为每个大区的世界服务分配唯一的外部端口!!!!`
+- `${DOCKER_WORLD_EXTERNAL_PORT_X:-8085}:8085` (例如: 8085)
+- `${DOCKER_SOAP_EXTERNAL_PORT_X:-7878}:7878` (例如: 7878)
 
 **环境变量文件**:
 - `${DOCKER_AC_ENV_FILE:-./conf/dist/env.ac}` (默认: ./conf/dist/env.ac)
@@ -201,25 +205,27 @@ DOCKER_VOL_DATA=./ac-client-data
 - `AC_LOGS_DIR`: 日志目录 (值: "/azerothcore/env/dist/logs")
 
 **挂载目录和文件**:
-`!!!!注意!!!!` `ac-worldserver` 的所有数据库连接信息**必须通过**挂载下方指定的 `worldserver.conf` 文件进行配置。
+`!!!!注意!!!!` 每个 `sX-worldserver` 的所有数据库连接信息**必须通过**挂载下方为其专属创建的 `sX_worldserver.conf` 文件进行配置。
 - `${DOCKER_VOL_ETC:-./env/dist/etc}:/azerothcore/env/dist/etc`: 配置文件目录
-- `./env/dist/etc/worldserver.conf:/azerothcore/env/dist/etc/worldserver.conf`: 世界服配置文件
+- `./env/dist/etc/sX_worldserver.conf:/azerothcore/env/dist/etc/worldserver.conf`: **每个大区专属**的世界服配置文件
 - `${DOCKER_VOL_LOGS:-./env/dist/logs}:/azerothcore/env/dist/logs:delegated`: 日志文件目录
 - `${DOCKER_VOL_DATA:-./ac-client-data}:/azerothcore/env/dist/data/:ro`: 客户端数据目录 (只读)
 
 **依赖条件**:
 - 依赖于 ac-database 服务的健康状态 (condition: service_healthy)
-- 依赖于 ac-db-import 服务的成功完成 (condition: service_completed_successfully)
+- 依赖于其对应的 **sX-db-import** 服务的成功完成 (condition: service_completed_successfully)
 
 **重启策略**: unless-stopped (除非手动停止，否则总是重启)
 
-### 新增大区流程
+### 部署与管理
 
-`ac-authserver` 为所有大区共享。新增一个大区意味着需要为其创建一套专属的 `ac-db-import` 和 `ac-worldserver` 服务，并更新数据库。
+#### 新增大区流程
 
-以下流程以新增一个**ID为2**，按命名规范应命名为 **"Realms2"** 的大区为例。
+`ac-authserver` 为所有大区共享。新增一个大区意味着需要为其创建一套专属的 `sX-db-import` 和 `sX-worldserver` 服务，并更新数据库。
 
-#### 第一步：创建并配置 worldserver.conf
+以下流程以新增一个**ID为2**的大区为例。
+
+##### 第一步：创建并配置 s2_worldserver.conf
 
 `!!!!重要!!!!` **此步骤必须严格遵循，它是确保新大区被正确识别的关键。**
 
@@ -237,21 +243,19 @@ DOCKER_VOL_DATA=./ac-client-data
     
     `!!!!注意：除以上三行外，其余所有参数均需保持默认值不变!!!!`
 
-#### 第二步：定义新大区的服务
+##### 第二步：定义新大区的服务
 
 在您的 `docker-compose.yml` 或等效的部署工具中，为新大区添加服务定义。
 
-1.  **数据库导入服务 (`ac-db-import`)**
-    -   **服务名**: 遵循 `s<大区ID>-db-import` 规范，例如 `s2-db-import`。
+1.  **数据库导入服务 (`s2-db-import`)**
     -   该服务依赖 `ac-database`，并应配置为使用新大区的数据库名 (`s2_world`, `s2_characters`)。
 
-2.  **世界服务器 (`ac-worldserver`)**
-    -   **服务名**: 遵循 `s<大区ID>-worldserver` 规范，例如 `s2-worldserver`。
+2.  **世界服务器 (`s2-worldserver`)**
     -   **端口映射**: `必须`为该服务分配**唯一**的外部端口，避免冲突。例如：`8086:8085`, `7879:7878`。
     -   **配置文件挂载**: 将上一步创建的 `s2_worldserver.conf` 文件挂载到容器内的 `/azerothcore/env/dist/etc/worldserver.conf`。
     -   该服务依赖 `ac-database` 和 `s2-db-import`。
 
-#### 第三步：更新大区列表
+##### 第三步：更新大区列表
 
 连接到共享的认证数据库 (`acore_auth`)，执行以下SQL语句将新大区注册到列表中。
 
@@ -268,7 +272,21 @@ VALUES (2, 'Realms2', '服务器IP', 8086, 0, 1)
 ON DUPLICATE KEY UPDATE name=VALUES(name), address=VALUES(address), port=VALUES(port), flag=VALUES(flag), timezone=VALUES(timezone);
 ```
 
-### 多大区最终目录结构示例
+#### 创建游戏账号
+```bash
+# 连接到任意一个大区的世界服务器控制台，例如大区1
+docker attach s1-worldserver
+
+# 创建账号
+account create 用户名 密码
+
+# 设置账号权限（可选，3为GM权限）
+account set gmlevel 用户名 3 -1
+
+# 退出控制台（按 Ctrl+P 然后 Ctrl+Q）
+```
+
+### 附录：多大区最终目录结构示例
 
 当您按照以上流程创建了多个大区（例如，大区1和大区2）后，您的 `/data/azerothcore/env/dist/etc` 目录看起来应该像这样：
 
@@ -283,18 +301,4 @@ ON DUPLICATE KEY UPDATE name=VALUES(name), address=VALUES(address), port=VALUES(
 ├── s2_worldserver.conf  <- 大区2的配置文件
 ├── worldserver.conf     <- 原始模板文件
 └── worldserver.conf.dist
-```
-
-### 创建游戏账号
-```bash
-# 连接到任意世界服务器控制台
-docker attach ac-worldserver
-
-# 创建账号
-account create 用户名 密码
-
-# 设置账号权限（可选，3为GM权限）
-account set gmlevel 用户名 3 -1
-
-# 退出控制台（按 Ctrl+P 然后 Ctrl+Q）
 ```

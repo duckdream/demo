@@ -1,0 +1,103 @@
+---
+# ansible/roles/deploy/tasks/main.yml
+
+- name: "DEPLOY | Template docker-compose.yml file using inline content"
+  ansible.builtin.copy:
+    dest: "{{ project_root }}/docker-compose.yml"
+    mode: '0644'
+    content: |
+      version: '3.8'
+
+      services:
+        ac-database:
+          image: mysql:8.4
+          container_name: ac-database
+          restart: unless-stopped
+          environment:
+            MYSQL_ROOT_PASSWORD: "${DOCKER_DB_ROOT_PASSWORD:-{{ db_root_password }} }"
+          ports:
+            - "${DOCKER_DB_EXTERNAL_PORT:-{{ db_external_port }} }:3306"
+          volumes:
+            - ac-database-data:/var/lib/mysql
+          healthcheck:
+            test: "/usr/bin/mysql --user=root --password=$$MYSQL_ROOT_PASSWORD --execute \"SHOW DATABASES;\""
+            interval: 5s
+            timeout: 10s
+            retries: 40
+
+      {% for realm in realms %}
+        s{{ realm.id }}-db-import:
+          image: registry.cn-shanghai.aliyuncs.com/demo-sh/ac-wotlk-db-import:master
+          container_name: s{{ realm.id }}-db-import
+          environment:
+            AC_DATA_DIR: "/azerothcore/env/dist/data"
+            AC_LOGS_DIR: "/azerothcore/env/dist/logs"
+            AC_LOGIN_DATABASE_INFO: "ac-database;3306;root;${DOCKER_DB_ROOT_PASSWORD:-{{ db_root_password }} };acore_auth"
+            AC_WORLD_DATABASE_INFO: "ac-database;3306;root;${DOCKER_DB_ROOT_PASSWORD:-{{ db_root_password }} };s{{ realm.id }}_world"
+            AC_CHARACTER_DATABASE_INFO: "ac-database;3306;root;${DOCKER_DB_ROOT_PASSWORD:-{{ db_root_password }} };s{{ realm.id }}_characters"
+          volumes:
+            - "${DOCKER_VOL_ETC:-./env/dist/etc}:/azerothcore/env/dist/etc"
+            - "${DOCKER_VOL_LOGS:-./env/dist/logs}:/azerothcore/env/dist/logs:delegated"
+          depends_on:
+            ac-database:
+              condition: service_healthy
+      {% endfor %}
+
+        ac-authserver:
+          image: registry.cn-shanghai.aliyuncs.com/demo-sh/ac-wotlk-authserver:master
+          container_name: ac-authserver
+          restart: unless-stopped
+          env_file:
+            - "${DOCKER_AC_ENV_FILE:-./conf/dist/env.ac}"
+          environment:
+            AC_LOGS_DIR: "/azerothcore/env/dist/logs"
+            AC_TEMP_DIR: "/azerothcore/env/dist/temp"
+            AC_LOGIN_DATABASE_INFO: "ac-database;3306;root;${DOCKER_DB_ROOT_PASSWORD:-{{ db_root_password }} };acore_auth"
+          ports:
+            - "${DOCKER_AUTH_EXTERNAL_PORT:-{{ auth_external_port }} }:3724"
+          volumes:
+            - "${DOCKER_VOL_ETC:-./env/dist/etc}:/azerothcore/env/dist/etc"
+            - "${DOCKER_VOL_LOGS:-./env/dist/logs}:/azerothcore/env/dist/logs:delegated"
+          depends_on:
+            ac-database:
+              condition: service_healthy
+            s1-db-import:
+              condition: service_completed_successfully
+
+      {% for realm in realms %}
+        s{{ realm.id }}-worldserver:
+          image: registry.cn-shanghai.aliyuncs.com/demo-sh/ac-wotlk-worldserver:master
+          container_name: s{{ realm.id }}-worldserver
+          restart: unless-stopped
+          tty: true
+          stdin_open: true
+          env_file:
+            - "${DOCKER_AC_ENV_FILE:-./conf/dist/env.ac}"
+          environment:
+            AC_DATA_DIR: "/azerothcore/env/dist/data"
+            AC_LOGS_DIR: "/azerothcore/env/dist/logs"
+          ports:
+            - "{{ realm.world_port }}:8085"
+            - "{{ realm.soap_port }}:7878"
+          volumes:
+            - "${DOCKER_VOL_ETC:-./env/dist/etc}:/azerothcore/env/dist/etc"
+            - "./env/dist/etc/s{{ realm.id }}_worldserver.conf:/azerothcore/env/dist/etc/worldserver.conf"
+            - "${DOCKER_VOL_LOGS:-./env/dist/logs}:/azerothcore/env/dist/logs:delegated"
+            - "${DOCKER_VOL_DATA:-./ac-client-data}:/azerothcore/env/dist/data/:ro"
+          depends_on:
+            ac-database:
+              condition: service_healthy
+            s{{ realm.id }}-db-import:
+              condition: service_completed_successfully
+      {% endfor %}
+
+      volumes:
+        ac-database-data:
+
+- name: "DEPLOY | Start all services with Docker Compose"
+  community.docker.docker_compose_v2:
+    project_src: "{{ project_root }}"
+    files:
+      - docker-compose.yml
+    state: present
+    remove_orphans: yes 
