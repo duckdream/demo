@@ -1,0 +1,15 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: temp-server-alpha
+  description: 手动创建的临时测试服务器 v2
+  annotations:
+    # 自定义注解，用于显示额外信息
+    example.com/server-ip: "192.168.1.100" 
+    backstage.io/techdocs-ref: dir:./docs # 关联技术文档
+spec:
+  type: service
+  lifecycle: experimental # 生命周期阶段
+  owner: user:default/guest # 组件的所有者
+  system: examples # 所属的大系统
+
