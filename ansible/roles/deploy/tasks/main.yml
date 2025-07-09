@@ -61,7 +61,7 @@
           depends_on:
             ac-database:
               condition: service_healthy
-            s1-db-import:
+            s{{ realms[0].id }}-db-import:
               condition: service_completed_successfully
 
       {% for realm in realms %}

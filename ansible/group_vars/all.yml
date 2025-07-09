@@ -35,6 +35,11 @@ realms:
     address: "10.10.0.146" # 需替换为您的服务器IP
     world_port: 8088
     soap_port: 7881
+  - id: 5
+    name: "Poseidon"
+    address: "10.10.0.146" # 需替换为您的服务器IP
+    world_port: 8089
+    soap_port: 7882
 
 # --- Client Data Source ---
 client_data_url: "http://10.10.0.109/downloads/data.zip"
