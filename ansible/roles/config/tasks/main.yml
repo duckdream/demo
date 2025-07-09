@@ -282,4 +282,68 @@
       Rate.XP.Quest.DF  = 1
   loop: "{{ realms }}"
   loop_control:
-    label: "{{ item.name }}" 
+    label: "{{ item.name }}"
+
+# --- Cleanup orphaned realm configs and databases ---
+
+- name: CONFIG | Find existing realm config files
+  ansible.builtin.find:
+    paths: "{{ project_root }}/env/dist/etc"
+    patterns: "s*_worldserver.conf"
+  register: existing_configs
+
+- name: CONFIG | Define expected realm config filenames
+  ansible.builtin.set_fact:
+    expected_configs: "{{ realms | map(attribute='id') | map('regex_replace', '^(.*)$', project_root ~ '/env/dist/etc/s\\1_worldserver.conf') | list }}"
+
+- name: CONFIG | Cleanup orphaned realm config files
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ existing_configs.files }}"
+  when: item.path not in expected_configs
+  loop_control:
+    label: "{{ item.path | basename }}"
+
+- name: CONFIG | Get list of existing world/characters databases
+  community.mysql.mysql_query:
+    login_user: root
+    login_password: "{{ db_root_password }}"
+    login_host: "127.0.0.1"
+    login_port: "{{ db_external_port }}"
+    query: "SHOW DATABASES LIKE 's%\\_world';"
+  register: world_dbs
+  changed_when: false
+  check_mode: no
+
+- name: CONFIG | Get list of existing characters databases
+  community.mysql.mysql_query:
+    login_user: root
+    login_password: "{{ db_root_password }}"
+    login_host: "127.0.0.1"
+    login_port: "{{ db_external_port }}"
+    query: "SHOW DATABASES LIKE 's%\\_characters';"
+  register: char_dbs
+  changed_when: false
+  check_mode: no
+
+- name: CONFIG | Combine all existing realm database names
+  ansible.builtin.set_fact:
+    existing_db_names: "{{ (world_dbs.query_result | community.general.json_query('[].*') | flatten | list) + (char_dbs.query_result | community.general.json_query('[].*') | flatten | list) }}"
+
+- name: CONFIG | Define expected realm database names
+  ansible.builtin.set_fact:
+    expected_db_names: "{{ realms | map(attribute='id') | map('regex_replace', '^(.*)$', 's\\1_world') | list + realms | map(attribute='id') | map('regex_replace', '^(.*)$', 's\\1_characters') | list }}"
+
+- name: CONFIG | Cleanup orphaned realm databases
+  community.mysql.mysql_db:
+    name: "{{ item }}"
+    state: absent
+    login_user: root
+    login_password: "{{ db_root_password }}"
+    login_host: "127.0.0.1"
+    login_port: "{{ db_external_port }}"
+  loop: "{{ existing_db_names }}"
+  when: item not in expected_db_names
+  loop_control:
+    label: "{{ item }}" 

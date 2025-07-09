@@ -1,6 +1,6 @@
+---
 all:
   hosts:
     azerothcore_server:
       ansible_host: 10.10.0.146
-      ansible_user: root # 假设使用 root 用户, 或者可以替换为有 sudo 权限的用户
-      # ansible_ssh_private_key_file: "~/.ssh/id_rsa" # 取消注释并设置为您的私钥路径 
+      ansible_user: root 

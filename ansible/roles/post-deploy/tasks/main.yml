@@ -3,19 +3,53 @@
 
 - name: POST-DEPLOY | Wait for database port to become available
   ansible.builtin.wait_for:
-    host: "{{ ansible_host }}"
+    host: "127.0.0.1"
     port: "{{ db_external_port }}"
     delay: 10
     timeout: 120
-  delegate_to: localhost
   become: false
 
-- name: POST-DEPLOY | Register each realm in the database
+- name: POST-DEPLOY | Get current list of realms from database
   community.mysql.mysql_query:
-    login_host: "{{ ansible_host }}"
-    login_port: "{{ db_external_port }}"
-    login_user: "root"
+    login_user: root
     login_password: "{{ db_root_password }}"
+    login_host: "127.0.0.1"
+    login_port: "{{ db_external_port }}"
+    login_db: "acore_auth"
+    query: "SELECT id, name FROM realmlist;"
+  register: current_realms_in_db
+  become: false
+  changed_when: false
+  check_mode: false
+
+- name: POST-DEPLOY | Define expected realm IDs
+  ansible.builtin.set_fact:
+    expected_realm_ids: "{{ realms | map(attribute='id') | list }}"
+
+- name: POST-DEPLOY | Identify orphaned realms to delete
+  ansible.builtin.set_fact:
+    realms_to_delete: "{{ (current_realms_in_db.query_result | first | map(attribute='id') | map('int') | list) | difference(expected_realm_ids) }}"
+
+- name: POST-DEPLOY | Delete orphaned realms from realmlist
+  community.mysql.mysql_query:
+    login_user: root
+    login_password: "{{ db_root_password }}"
+    login_host: "127.0.0.1"
+    login_port: "{{ db_external_port }}"
+    login_db: "acore_auth"
+    query: "DELETE FROM realmlist WHERE id = {{ item }};"
+  loop: "{{ realms_to_delete }}"
+  become: false
+  loop_control:
+    label: "ID {{ item }}"
+  when: realms_to_delete | length > 0
+
+- name: POST-DEPLOY | Register/Update each realm in the database
+  community.mysql.mysql_query:
+    login_user: root
+    login_password: "{{ db_root_password }}"
+    login_host: "127.0.0.1"
+    login_port: "{{ db_external_port }}"
     login_db: "acore_auth"
     query: >-
       INSERT INTO realmlist (id, name, address, port, flag, timezone)
@@ -25,5 +59,4 @@
   loop: "{{ realms }}"
   loop_control:
     label: "{{ item.name }}"
-  delegate_to: localhost
   become: false 
