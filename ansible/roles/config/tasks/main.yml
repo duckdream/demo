@@ -25,39 +25,260 @@
     state: directory
     mode: '0755'
 
-- name: "CONFIG | Copy worldserver.conf template for each realm"
+- name: "CONFIG | Generate worldserver.conf for each realm using inline template"
   ansible.builtin.copy:
-    src: "{{ project_root }}/conf/dist/worldserver.conf"
     dest: "{{ project_root }}/env/dist/etc/s{{ item.id }}_worldserver.conf"
-    remote_src: yes
     mode: '0644'
-  loop: "{{ realms }}"
-  loop_control:
-    label: "{{ item.name }}"
-
-- name: "CONFIG | Update RealmID in sX_worldserver.conf for each realm"
-  ansible.builtin.lineinfile:
-    path: "{{ project_root }}/env/dist/etc/s{{ item.id }}_worldserver.conf"
-    regexp: '^RealmID ='
-    line: 'RealmID = {{ item.id }}'
-  loop: "{{ realms }}"
-  loop_control:
-    label: "{{ item.name }}"
-
-- name: "CONFIG | Update WorldDatabaseInfo in sX_worldserver.conf for each realm"
-  ansible.builtin.lineinfile:
-    path: "{{ project_root }}/env/dist/etc/s{{ item.id }}_worldserver.conf"
-    regexp: '^WorldDatabaseInfo ='
-    line: 'WorldDatabaseInfo     = "ac-database;3306;root;{{ db_root_password }};s{{ item.id }}_world"'
-  loop: "{{ realms }}"
-  loop_control:
-    label: "{{ item.name }}"
-
-- name: "CONFIG | Update CharacterDatabaseInfo in sX_worldserver.conf for each realm"
-  ansible.builtin.lineinfile:
-    path: "{{ project_root }}/env/dist/etc/s{{ item.id }}_worldserver.conf"
-    regexp: '^CharacterDatabaseInfo ='
-    line: 'CharacterDatabaseInfo = "ac-database;3306;root;{{ db_root_password }};s{{ item.id }}_characters"'
+    content: |
+      [worldserver]
+      RealmID = {{ item.id }}
+      WorldServerPort = 8085
+      BindIP = "0.0.0.0"
+      LoginDatabaseInfo     = "ac-database;3306;root;{{ db_root_password }};acore_auth"
+      WorldDatabaseInfo     = "ac-database;3306;root;{{ db_root_password }};s{{ item.id }}_world"
+      CharacterDatabaseInfo = "ac-database;3306;root;{{ db_root_password }};s{{ item.id }}_characters"
+      LoginDatabase.WorkerThreads     = 1
+      WorldDatabase.WorkerThreads     = 1
+      CharacterDatabase.WorkerThreads = 1
+      LoginDatabase.SynchThreads     = 1
+      WorldDatabase.SynchThreads     = 1
+      CharacterDatabase.SynchThreads = 1
+      MaxPingTime = 30
+      Database.Reconnect.Seconds = 15
+      Database.Reconnect.Attempts = 20
+      DataDir = "."
+      LogsDir = ""
+      TempDir = ""
+      CMakeCommand = ""
+      BuildDirectory = ""
+      SourceDirectory = ""
+      MySQLExecutable = ""
+      PidFile = ""
+      Console.Enable = 1
+      BeepAtStart = 1
+      FlashAtStart = 1
+      Updates.EnableDatabases = 7
+      Updates.AutoSetup   = 1
+      Updates.Redundancy  = 1
+      Updates.ArchivedRedundancy = 0
+      Updates.AllowRehash = 1
+      Updates.CleanDeadRefMaxCount = 3
+      Network.Threads = 1
+      Network.OutKBuff = -1
+      Network.OutUBuff = 4096
+      Network.TcpNodelay = 1
+      Network.EnableProxyProtocol = 0
+      Ra.Enable = 0
+      Ra.IP = "0.0.0.0"
+      Ra.Port = 3443
+      Ra.MinLevel = 3
+      SOAP.Enabled = 1
+      SOAP.IP = "0.0.0.0"
+      SOAP.Port = 7878
+      ThreadPool = 2
+      UseProcessors = 0
+      ProcessPriority = 1
+      Compression = 1
+      PacketLogFile = ""
+      LogDB.Opt.ClearInterval = 10
+      LogDB.Opt.ClearTime = 1209600
+      RecordUpdateTimeDiffInterval = 300000
+      MinRecordUpdateTimeDiff = 100
+      IPLocationFile = ""
+      AllowLoggingIPAddressesInDatabase = 1
+      Allow.IP.Based.Action.Logging = 0
+      Appender.Console=1,4,0,"1 9 3 6 5 8"
+      Appender.Server=2,5,0,Server.log,w
+      Appender.Errors=2,5,0,Errors.log,w
+      Logger.root=2,Console Server
+      Logger.diff=3,Console Server
+      Logger.mmaps=4,Server
+      Logger.scripts.hotswap=4,Console Server
+      Logger.server=4,Console Server
+      Logger.sql.sql=2,Console Errors
+      Logger.sql=4,Console Server
+      Logger.time.update=4,Console Server
+      Logger.module=4,Console Server
+      Logger.spells.scripts=2,Console Errors
+      Log.Async.Enable = 0
+      Metric.Enable = 0
+      Metric.Interval = 1
+      Metric.ConnectionInfo = "127.0.0.1;8086;worldserver"
+      Metric.OverallStatusInterval = 1
+      BirthdayTime = 1222964635
+      PlayerLimit = 1000
+      World.RealmAvailability = 1
+      GameType = 0
+      RealmZone = 1
+      DBC.Locale = 255
+      Expansion = 2
+      ClientCacheVersion = 0
+      SessionAddDelay = 10000
+      CloseIdleConnections = 1
+      SocketTimeOutTime = 900000
+      SocketTimeOutTimeActive = 60000
+      MaxOverspeedPings = 2
+      DisconnectToleranceInterval = 0
+      EnableLoginAfterDC = 1
+      MinWorldUpdateTime = 1
+      UpdateUptimeInterval = 10
+      MaxCoreStuckTime = 0
+      SaveRespawnTimeImmediately = 1
+      Server.LoginInfo = 0
+      ShowKickInWorld = 0
+      ShowMuteInWorld = 0
+      ShowBanInWorld = 0
+      MaxWhoListReturns = 49
+      PreventAFKLogout = 0
+      PacketSpoof.BanMode = 0
+      PacketSpoof.BanDuration = 86400
+      Warden.Enabled = 1
+      Warden.NumMemChecks = 3
+      Warden.NumLuaChecks = 1
+      Warden.NumOtherChecks = 7
+      Warden.ClientResponseDelay = 600
+      Warden.ClientCheckHoldOff = 30
+      Warden.ClientCheckFailAction = 0
+      Warden.BanDuration = 86400
+      AutoBroadcast.On = 0
+      AutoBroadcast.Center = 0
+      AutoBroadcast.Timer = 60000
+      AutoBroadcast.MinDisableLevel = 0
+      Visibility.GroupMode = 1
+      Visibility.Distance.Continents = 100
+      Visibility.Distance.Instances = 170
+      Visibility.Distance.BGArenas = 250
+      Visibility.ObjectSparkles = 1
+      Visibility.ObjectQuestMarkers = 1
+      MapUpdateInterval = 10
+      MapUpdate.Threads = 1
+      MoveMaps.Enable = 1
+      vmap.enableLOS    = 1
+      vmap.enableHeight = 1
+      vmap.petLOS = 1
+      vmap.BlizzlikePvPLOS = 1
+      vmap.BlizzlikeLOSInOpenWorld = 1
+      vmap.enableIndoorCheck = 1
+      DetectPosCollision = 1
+      CheckGameObjectLoS = 1
+      PreloadAllNonInstancedMapGrids = 0
+      SetAllCreaturesWithWaypointMovementActive = 0
+      DontCacheRandomMovementPaths = 0
+      ActivateWeather = 1
+      ChangeWeatherInterval = 600000
+      AllowTickets = 1
+      LevelReq.Ticket = 1
+      DeletedCharacterTicketTrace = 0
+      AllowPlayerCommands = 1
+      Command.LookupMaxResults = 0
+      Die.Command.Mode = 1
+      GM.LoginState = 2
+      GM.Visible = 2
+      GM.Chat = 2
+      GM.WhisperingTo = 2
+      GM.InGMList.Level = 3
+      GM.InWhoList.Level = 3
+      GM.StartLevel = 1
+      GM.AllowInvite = 0
+      GM.AllowFriend = 0
+      GM.LowerSecurity = 0
+      GM.TicketSystem.ChanceOfGMSurvey = 50
+      DisableWaterBreath = 4
+      AllFlightPaths = 0
+      InstantFlightPaths = 0
+      AlwaysMaxSkillForLevel = 0
+      AlwaysMaxWeaponSkill = 0
+      PlayerStart.AllReputation = 0
+      PlayerStart.CustomSpells = 0
+      PlayerStart.MapsExplored = 0
+      InstantLogout = 1
+      PlayerSaveInterval = 900000
+      PlayerSave.Stats.MinLevel = 0
+      PlayerSave.Stats.SaveOnlyOnLogout = 1
+      CleanCharacterDB = 0
+      PersistentCharacterCleanFlags = 0
+      CharDelete.Method = 0
+      CharDelete.MinLevel = 0
+      CharDelete.KeepDays = 30
+      MinPlayerName = 2
+      MinPetName = 2
+      DeclinedNames = 0
+      StrictNames.Reserved = 1
+      StrictNames.Profanity = 1
+      StrictPlayerNames = 0
+      StrictPetNames = 0
+      CharacterCreating.Disabled = 0
+      CharacterCreating.Disabled.RaceMask = 0
+      CharacterCreating.Disabled.ClassMask = 0
+      CharactersPerAccount = 50
+      CharactersPerRealm = 10
+      HeroicCharactersPerRealm = 1
+      CharacterCreating.MinLevelForHeroicCharacter = 55
+      StartPlayerLevel = 1
+      StartHeroicPlayerLevel = 55
+      SkipCinematics = 0
+      StartPlayerMoney = 0
+      StartHeroicPlayerMoney = 2000
+      PlayerStart.String = ""
+      EnablePlayerSettings = 0
+      MaxPlayerLevel = 80
+      MinDualSpecLevel = 40
+      WaterBreath.Timer = 180000
+      EnableLowLevelRegenBoost = 1
+      Rate.MoveSpeed.Player = 1
+      Rate.MoveSpeed.NPC = 1
+      Rate.Damage.Fall = 1
+      Rate.Talent = 1
+      Rate.Talent.Pet = 1
+      Rate.Health            = 1
+      Rate.Mana              = 1
+      Rate.Rage.Income       = 1
+      Rate.Rage.Loss         = 1
+      Rate.RunicPower.Income = 1
+      Rate.RunicPower.Loss   = 1
+      Rate.Focus             = 1
+      Rate.Energy            = 1
+      Rate.Loyalty           = 1
+      Rate.Rest.InGame                 = 1
+      Rate.Rest.Offline.InTavernOrCity = 1
+      Rate.Rest.Offline.InWilderness   = 1
+      Rate.Rest.MaxBonus               = 1.5
+      Rate.MissChanceMultiplier.TargetCreature = 11
+      Rate.MissChanceMultiplier.TargetPlayer = 7
+      Rate.MissChanceMultiplier.OnlyAffectsPlayer = 0
+      LevelReq.Trade = 1
+      NoResetTalentsCost = 0
+      ToggleXP.Cost = 100000
+      SpellQueue.Enabled = 1
+      SpellQueue.Window = 400
+      MaxPrimaryTradeSkill = 2
+      SkillChance.Prospecting = 0
+      SkillChance.Milling = 0
+      Rate.Skill.Discovery = 1
+      SkillGain.Crafting  = 1
+      SkillGain.Defense   = 1
+      SkillGain.Gathering = 1
+      SkillGain.Weapon    = 1
+      SkillChance.Orange = 100
+      SkillChance.Yellow = 75
+      SkillChance.Green  = 25
+      SkillChance.Grey   = 0
+      SkillChance.MiningSteps   = 0
+      SkillChance.SkinningSteps = 0
+      OffhandCheckAtSpellUnlearn = 1
+      Stats.Limits.Enable = 0
+      Stats.Limits.Dodge = 95.0
+      Stats.Limits.Parry = 95.0
+      Stats.Limits.Block = 95.0
+      Stats.Limits.Crit  = 95.0
+      Rate.Reputation.Gain = 1
+      Rate.Reputation.LowLevel.Kill = 1
+      Rate.Reputation.LowLevel.Quest = 1
+      Rate.Reputation.RecruitAFriendBonus = 0.1
+      MaxGroupXPDistance = 74
+      Rate.XP.Kill      = 1
+      Rate.XP.Quest     = 1
+      Rate.XP.Quest.DF  = 1
   loop: "{{ realms }}"
   loop_control:
     label: "{{ item.name }}"
